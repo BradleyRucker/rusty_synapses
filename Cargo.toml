@@ -1,0 +1,19 @@
+[package]
+name = "synapse"
+version = "0.1.0"
+edition = "2021"
+description = "Lightweight binary communication protocol for UAV systems"
+
+[lib]
+name = "synapse"
+crate-type = ["lib", "staticlib", "cdylib"]
+
+[dependencies]
+anyhow = "1.0"
+serde = { version = "1.0", features = ["derive"] }
+libc = "0.2"
+pyo3 = { version = "0.22", features = ["extension-module"], optional = true }
+
+[features]
+default = []
+python = ["pyo3"]
