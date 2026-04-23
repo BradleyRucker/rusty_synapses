@@ -1,6 +1,6 @@
 use anyhow::{Result, anyhow};
-use crate::{crc, cobs};
 use std::time::{SystemTime, UNIX_EPOCH};
+use crate::core::{cobs, crc};
 
 const SYNAPSE_MAGIC: u16 = 0x534E; // "SN"
 const SYNAPSE_VERSION: u8 = 0x02;  // V2 protocol
@@ -22,7 +22,7 @@ pub const FLAG_PAYLOAD_CRC: u8 = 0x20;
 
 // Header extension types (TLV)
 const EXT_ROUTING: u8 = 0x01;    // Routing: src/dst endpoints (4 bytes)
-const EXT_FRAGMENT: u8 = 0x03;   // Fragment info (6 bytes)
+// const EXT_FRAGMENT: u8 = 0x03;   // Fragment info (6 bytes)
 
 /// Synapse V2 frame structure
 #[derive(Debug, Clone)]
@@ -78,6 +78,16 @@ impl SynapseFrame {
     pub fn with_routing(mut self, src: u16, dst: u16) -> Self {
         self.src_endpoint = Some(src);
         self.dst_endpoint = Some(dst);
+        self
+    }
+
+    pub fn with_endpoint_ids(
+        mut self,
+        src: crate::endpoint::EndpointId,
+        dst: crate::endpoint::EndpointId,
+    ) -> Self {
+        self.src_endpoint = Some(src.raw());
+        self.dst_endpoint = Some(dst.raw());
         self
     }
 

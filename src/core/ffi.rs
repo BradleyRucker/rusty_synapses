@@ -3,8 +3,10 @@
 //! These functions provide a C-compatible interface for building and parsing
 //! Synapse frames from C/C++ code.
 
-use crate::frame::SynapseFrame;
-use crate::messages::{SynapseMessage, SERVICE_VIO, STATUS_RUNNING};
+use crate::core::frame::SynapseFrame;
+use crate::core::messages::{
+    SupervisorMessage, SynapseMessage, SERVICE_VIO, STATUS_RUNNING,
+};
 use libc::{c_char, c_int, size_t};
 use std::ffi::CStr;
 use std::slice;
@@ -30,11 +32,11 @@ pub extern "C" fn synapse_build_register(
         }
     };
 
-    let msg = SynapseMessage::Register {
+    let msg = SynapseMessage::Supervisor(SupervisorMessage::Register {
         service_id,
         pid,
         version: version_str,
-    };
+    });
 
     let frame = msg.to_frame();
     let encoded = frame.encode_with_cobs();
@@ -63,7 +65,7 @@ pub extern "C" fn synapse_build_heartbeat(
         return -1;
     }
 
-    let msg = SynapseMessage::ServiceHeartbeat {
+    let msg = SynapseMessage::Supervisor(SupervisorMessage::ServiceHeartbeat {
         service_id,
         status,
         timestamp: std::time::SystemTime::now()
@@ -71,45 +73,7 @@ pub extern "C" fn synapse_build_heartbeat(
             .unwrap()
             .as_millis() as u64,
         error_msg: None,
-    };
-
-    let frame = msg.to_frame();
-    let encoded = frame.encode_with_cobs();
-
-    if encoded.len() > out_buf_len {
-        return -1;
-    }
-
-    unsafe {
-        std::ptr::copy_nonoverlapping(encoded.as_ptr(), out_buf, encoded.len());
-    }
-
-    encoded.len() as c_int
-}
-
-/// Build a VioPose message and write it to the output buffer.
-/// Returns the number of bytes written, or -1 on error.
-#[no_mangle]
-pub extern "C" fn synapse_build_vio_pose(
-    timestamp_ns: u64,
-    px: f64, py: f64, pz: f64,
-    qw: f64, qx: f64, qy: f64, qz: f64,
-    vx: f64, vy: f64, vz: f64,
-    initialized: bool,
-    out_buf: *mut u8,
-    out_buf_len: size_t,
-) -> c_int {
-    if out_buf.is_null() {
-        return -1;
-    }
-
-    let msg = SynapseMessage::VioPose {
-        timestamp_ns,
-        position: [px, py, pz],
-        quaternion: [qw, qx, qy, qz],
-        velocity: [vx, vy, vz],
-        initialized,
-    };
+    });
 
     let frame = msg.to_frame();
     let encoded = frame.encode_with_cobs();
